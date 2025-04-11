@@ -9,14 +9,12 @@ import {
   TableCellsIcon,
   ClockIcon,
   ChevronRightIcon,
-  ArrowPathIcon,
   FolderIcon,
 } from '@heroicons/vue/20/solid'
 
 defineProps<{
   branches: Branch[]
   list_loading: boolean
-  disable_loading: boolean
 }>()
 
 const emit = defineEmits<{
@@ -51,11 +49,10 @@ const getReservationTablesCount = (branch: Branch) => {
         <button
           @click="emit('disable-all')"
           class="flex items-center px-4 py-2 border text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors gap-2 cursor-pointer"
-          :disabled="list_loading || disable_loading || branches.length === 0"
+          :disabled="list_loading || branches.length === 0"
         >
-          <ArrowPathIcon v-if="disable_loading" class="h-5 w-5 animate-spin" />
-          <XCircleIcon v-else class="h-5 w-5" />
-          {{ disable_loading ? 'Disabling...' : 'Disable Reservations' }}
+          <XCircleIcon class="h-5 w-5" />
+          Disable Reservations
         </button>
       </div>
     </header>
