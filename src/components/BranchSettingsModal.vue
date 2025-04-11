@@ -391,7 +391,7 @@ const handleSubmit = async () => {
                         @click="removeTimeSlot(day, index)"
                         class="text-red-500 hover:text-red-600 p-2 rounded-full hover:bg-red-50 transition-colors"
                       >
-                        <XMarkIcon class="h-5 w-5" />
+                        <XMarkIcon class="h-5 w-5 cursor-pointer" />
                       </button>
                     </div>
                     <p
@@ -423,7 +423,7 @@ const handleSubmit = async () => {
                       acceptsReservations
                         ? 'bg-blue-600 hover:bg-blue-700'
                         : 'bg-gray-200 hover:bg-gray-300',
-                      'px-4 py-2 rounded-md text-white text-sm font-medium transition-colors duration-200',
+                      'px-4 py-2 rounded-md text-white text-sm font-medium transition-colors duration-200 cursor-pointer',
                     ]"
                   >
                     {{ acceptsReservations ? 'Disable' : 'Enable' }}
@@ -448,7 +448,7 @@ const handleSubmit = async () => {
                 <div class="flex justify-end gap-4">
                   <button
                     type="button"
-                    class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-colors gap-2"
+                    class="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-colors gap-2"
                     @click="emit('close')"
                   >
                     <XMarkIcon class="h-5 w-5" />
@@ -456,7 +456,7 @@ const handleSubmit = async () => {
                   </button>
                   <button
                     type="submit"
-                    class="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-colors gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="inline-flex cursor-pointer items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-colors gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     :disabled="loading"
                   >
                     <ArrowPathIcon v-if="loading" class="h-5 w-5 animate-spin" />
