@@ -6,6 +6,7 @@ import { getBranches } from '@/services'
 import BranchList from '@/components/BranchList.vue'
 import AddBranchModal from '@/components/AddBranchModal.vue'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import BranchSettingsModal from '@/components/BranchSettingsModal.vue'
 
 const branches = ref<Branch[]>([])
 const branch_list_loading = ref(false)
@@ -31,6 +32,13 @@ const disabledBranches = computed(() => {
 
 const isAddBranchModalOpen = ref(false)
 const isDisableAllModalOpen = ref(false)
+
+const isBranchSettingsModalOpen = ref(false)
+const selectedBranch = ref<Branch | null>(null)
+const handleBranchSelect = (branch: Branch) => {
+  selectedBranch.value = branch
+  isBranchSettingsModalOpen.value = true
+}
 
 onMounted(async () => {
   loadBranches()
@@ -61,6 +69,7 @@ onMounted(async () => {
             :list_loading="branch_list_loading"
             @add-branch="isAddBranchModalOpen = true"
             @disable-all="isDisableAllModalOpen = true"
+            @select-branch="handleBranchSelect"
           />
         </div>
       </div>
@@ -78,6 +87,14 @@ onMounted(async () => {
       :is-open="isDisableAllModalOpen"
       @close="isDisableAllModalOpen = false"
       :enabled-branches="enabledBranches"
+      @branches-updated="loadBranches"
+    />
+
+    <BranchSettingsModal
+      v-if="selectedBranch"
+      :is-open="isBranchSettingsModalOpen"
+      :branch="selectedBranch"
+      @close="((isBranchSettingsModalOpen = false), (selectedBranch = null))"
       @branches-updated="loadBranches"
     />
   </div>
