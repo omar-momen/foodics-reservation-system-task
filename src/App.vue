@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import type { Branch, responseError } from '@/types'
 import { getBranches } from '@/services'
 
 import BranchList from '@/components/BranchList.vue'
+import AddBranchModal from '@/components/AddBranchModal.vue'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 const branches = ref<Branch[]>([])
 const branch_list_loading = ref(false)
 const error = ref<string | null>(null)
-const disable_loading = ref(false)
-
 const loadBranches = async () => {
   try {
     branch_list_loading.value = true
     const response = await getBranches()
-    branches.value = response.data.data.filter((branch: Branch) => branch.accepts_reservations)
+    branches.value = response.data.data
   } catch (err: unknown) {
     error.value = (err as responseError).response.data.message
     console.error(err)
@@ -22,6 +22,15 @@ const loadBranches = async () => {
     branch_list_loading.value = false
   }
 }
+const enabledBranches = computed(() => {
+  return branches.value.filter((branch: Branch) => branch.accepts_reservations)
+})
+const disabledBranches = computed(() => {
+  return branches.value.filter((branch: Branch) => !branch.accepts_reservations)
+})
+
+const isAddBranchModalOpen = ref(false)
+const isDisableAllModalOpen = ref(false)
 
 onMounted(async () => {
   loadBranches()
@@ -48,12 +57,28 @@ onMounted(async () => {
 
         <div v-else>
           <BranchList
-            :branches="branches"
+            :branches="enabledBranches"
             :list_loading="branch_list_loading"
-            :disable_loading="disable_loading"
+            @add-branch="isAddBranchModalOpen = true"
+            @disable-all="isDisableAllModalOpen = true"
           />
         </div>
       </div>
     </main>
+
+    <AddBranchModal
+      v-if="isAddBranchModalOpen"
+      :is-open="isAddBranchModalOpen"
+      @close="isAddBranchModalOpen = false"
+      :branches="disabledBranches"
+      @branches-updated="loadBranches"
+    />
+
+    <ConfirmationModal
+      :is-open="isDisableAllModalOpen"
+      @close="isDisableAllModalOpen = false"
+      :enabled-branches="enabledBranches"
+      @branches-updated="loadBranches"
+    />
   </div>
 </template>
