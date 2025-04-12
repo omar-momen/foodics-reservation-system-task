@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import type { Section } from '@/types'
 
 import {
   Dialog,
@@ -106,6 +107,7 @@ const validateTimeSlot = (startTime: string, endTime: string) => {
 
 const validateForm = () => {
   let isValid = true
+
   errors.value = {
     duration: '',
     tables: '',
@@ -160,9 +162,7 @@ const handleSubmit = async () => {
 
   try {
     const updatedSections = props.branch.sections.map((section) => ({
-      ...section,
       tables: section.tables.map((table) => ({
-        ...table,
         accepts_reservations: selectedTables.value.includes(table.id),
       })),
     }))
@@ -170,7 +170,7 @@ const handleSubmit = async () => {
     await updateBranch(props.branch.id, {
       reservation_duration: duration.value,
       reservation_times: timeSlots.value,
-      sections: updatedSections,
+      sections: updatedSections as Section[],
       accepts_reservations: acceptsReservations.value,
     })
     emit('branches-updated')
