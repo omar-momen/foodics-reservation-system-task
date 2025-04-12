@@ -63,15 +63,17 @@ const tables = computed(() => {
 })
 
 const maximumDuration = computed(() => {
-  return Object.values(timeSlots.value)
-    .flat()
-    .reduce((max, slot) => {
-      const [start, end] = slot.map((time) => {
-        const [hours, minutes] = time.split(':').map(Number)
-        return hours * 60 + minutes
-      })
-      return Math.max(max, end - start)
-    }, 0)
+  return Math.min(
+    ...Object.values(timeSlots.value)
+      .flat()
+      .map((slot) => {
+        const [start, end] = slot.map((time) => {
+          const [hours, minutes] = time.split(':').map(Number)
+          return hours * 60 + minutes
+        })
+        return end - start
+      }),
+  )
 })
 
 // Error states
