@@ -14,10 +14,13 @@ import {
   XCircleIcon,
 } from '@heroicons/vue/20/solid'
 
-import type { Branch, responseError } from '@/types'
+import type { Branch } from '@/types'
 import { updateBranch } from '@/services'
 import TimeSlots from './TimeSlots.vue'
 import TableSelector from './TableSelector.vue'
+
+import { useErrorHandler } from '@/composables/useErrorHandler'
+const { getErrorMessage } = useErrorHandler()
 
 const props = defineProps<{
   isOpen: boolean
@@ -176,7 +179,8 @@ const handleSubmit = async () => {
     emit('branches-updated')
     emit('close')
   } catch (error: unknown) {
-    errors.value.backend = (error as responseError).response.data.message
+    errors.value.backend = getErrorMessage(error)
+    console.log(errors.value.backend)
     console.error('Error updating branch:', error)
     scrollToFirstError()
   } finally {

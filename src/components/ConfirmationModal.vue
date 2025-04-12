@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { disableAllBranches } from '@/services'
-import type { responseError, Branch } from '@/types'
+import type { Branch } from '@/types'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
 import {
@@ -22,16 +23,18 @@ const emit = defineEmits<{
   (e: 'branches-updated'): void
 }>()
 
+const { getErrorMessage } = useErrorHandler()
 const error = ref<string | null>(null)
 const loading = ref(false)
+
 const handleDisableAllReservations = async () => {
   try {
     loading.value = true
     await disableAllBranches(props.enabledBranches)
     emit('branches-updated')
   } catch (err) {
-    error.value = (err as responseError).response.data.message
-    console.error(err)
+    error.value = getErrorMessage(err)
+    console.log(error.value)
   } finally {
     loading.value = false
     emit('close')
