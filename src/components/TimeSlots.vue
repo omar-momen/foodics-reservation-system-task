@@ -75,11 +75,6 @@ const hasTimeConflict = (slots: string[][], currentIndex: number): boolean => {
 }
 
 const validateDayTimeSlots = (day: string) => {
-  if (!props.modelValue[day] || props.modelValue[day].length === 0) {
-    errors.value[day] = ['At least one time slot is required']
-    emit('update:isValid', false)
-    return false
-  }
   let dayValid = true
   errors.value[day] = []
 
@@ -206,11 +201,10 @@ const updateTimeSlot = (day: string, index: number, field: 0 | 1, value: string)
       </div>
       <p
         v-if="!modelValue[day] || modelValue[day].length === 0"
-        :id="`time-slot-error-${day}`"
-        class="mt-1 text-sm text-red-600 flex items-center gap-1"
+        :id="`time-slot-message-${day}`"
+        class="mt-1 text-sm text-gray-500 flex items-center gap-1"
       >
-        <XCircleIcon class="h-4 w-4" />
-        At least one time slot is required
+        No time slots added for this day
       </p>
     </div>
   </div>

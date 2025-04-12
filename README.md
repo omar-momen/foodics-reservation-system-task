@@ -22,10 +22,12 @@ A modern web application for managing restaurant reservations, built with Vue 3,
 src/
 ├── assets/          # Static assets and global styles
 ├── components/      # Vue components
-│   ├── AddBranchModal.vue
-│   ├── BranchList.vue
-│   ├── BranchSettingsModal.vue
-│   └── ConfirmationModal.vue
+│   ├── AddBranchModal.vue    # Branch creation interface
+│   ├── BranchList.vue        # Main branch management component
+│   ├── BranchSettingsModal.vue # Branch configuration modal
+│   ├── ConfirmationModal.vue  # Reusable confirmation dialog
+│   ├── TableSelector.vue     # Table selection component
+│   └── TimeSlots.vue         # Time slot management component
 ├── composables/     # Vue composition functions
 ├── services/        # API service layer
 │   ├── branches.ts
