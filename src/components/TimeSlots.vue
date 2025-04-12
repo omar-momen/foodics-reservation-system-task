@@ -37,11 +37,11 @@ const removeTimeSlot = (day: string, index: number) => {
 }
 
 const applyToAllDays = () => {
-  const saturdaySlots = [...props.modelValue.saturday]
+  const saturdaySlots = props.modelValue.saturday.map((slot) => [...slot])
   const newTimeSlots = { ...props.modelValue }
   props.days.forEach((day) => {
     if (day !== 'saturday') {
-      newTimeSlots[day] = [...saturdaySlots]
+      newTimeSlots[day] = saturdaySlots.map((slot) => [...slot])
     }
   })
   emit('update:modelValue', newTimeSlots)
