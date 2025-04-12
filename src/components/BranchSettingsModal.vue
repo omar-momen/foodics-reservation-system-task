@@ -34,17 +34,17 @@ const emit = defineEmits<{
 
 const duration = ref(props.branch.reservation_duration)
 const maximumDuration = computed(() => {
-  return Math.min(
-    ...Object.values(timeSlots.value)
-      .flat()
-      .map((slot) => {
-        const [start, end] = slot.map((time) => {
-          const [hours, minutes] = time.split(':').map(Number)
-          return hours * 60 + minutes
-        })
-        return end - start
-      }),
-  )
+  const slotDurations = Object.values(timeSlots.value)
+    .flat()
+    .map((slot) => {
+      const [start, end] = slot.map((time) => {
+        const [hours, minutes] = time.split(':').map(Number)
+        return hours * 60 + minutes
+      })
+      return end - start
+    })
+
+  return slotDurations.length > 0 ? Math.min(...slotDurations) : 120 // Default to 2 hours if no slots
 })
 
 const selectedTables = ref<string[]>(
