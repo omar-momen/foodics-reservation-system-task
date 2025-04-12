@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import type { Section } from '@/types'
 
 import {
   Dialog,
@@ -37,6 +38,8 @@ const emit = defineEmits<{
   (e: 'branches-updated'): void
 }>()
 
+const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+
 const duration = ref(props.branch.reservation_duration)
 const selectedTables = ref<string[]>(
   props.branch.sections
@@ -48,12 +51,15 @@ const timeSlots = ref({ ...props.branch.reservation_times })
 const acceptsReservations = ref(props.branch.accepts_reservations)
 const loading = ref(false)
 
-// Error states
-const errors = ref({
-  duration: '',
-  tables: '',
-  timeSlots: {} as Record<string, string[]>,
-  backend: '',
+const tables = computed(() => {
+  return props.branch.sections.map((section) => ({
+    sectionName: section.name,
+    tables: section.tables.map((table) => ({
+      id: table.id,
+      name: `${section.name} - ${table.name}`,
+      accepts_reservations: table.accepts_reservations,
+    })),
+  }))
 })
 
 const maximumDuration = computed(() => {
@@ -68,29 +74,23 @@ const maximumDuration = computed(() => {
     }, 0)
 })
 
-const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
-
-const tables = computed(() => {
-  return props.branch.sections.map((section) => ({
-    sectionName: section.name,
-    tables: section.tables.map((table) => ({
-      id: table.id,
-      name: `${section.name} - ${table.name}`,
-      accepts_reservations: table.accepts_reservations,
-    })),
-  }))
+// Error states
+const errors = ref({
+  duration: '',
+  tables: '',
+  timeSlots: {} as Record<string, string[]>,
+  backend: '',
 })
 
+// Time slots
 const addTimeSlot = (day: string) => {
   if (timeSlots.value[day].length < 3) {
     timeSlots.value[day].push(['09:00', '17:00'])
   }
 }
-
 const removeTimeSlot = (day: string, index: number) => {
   timeSlots.value[day].splice(index, 1)
 }
-
 const applyToAllDays = () => {
   const saturdaySlots = [...timeSlots.value.saturday]
   days.forEach((day) => {
@@ -99,13 +99,102 @@ const applyToAllDays = () => {
     }
   })
 }
-
 const validateTimeSlot = (startTime: string, endTime: string) => {
   return startTime < endTime
 }
 
-const validateForm = () => {
+const hasTimeConflict = (slots: string[][], currentIndex: number): boolean => {
+  const currentSlot = slots[currentIndex]
+  const [currentStart, currentEnd] = currentSlot.map((time) => {
+    const [hours, minutes] = time.split(':').map(Number)
+    return hours * 60 + minutes
+  })
+
+  return slots.some((slot, index) => {
+    if (index === currentIndex) return false
+
+    const [start, end] = slot.map((time) => {
+      const [hours, minutes] = time.split(':').map(Number)
+      return hours * 60 + minutes
+    })
+
+    return (
+      (currentStart >= start && currentStart < end) ||
+      (currentEnd > start && currentEnd <= end) ||
+      (currentStart <= start && currentEnd >= end)
+    )
+  })
+}
+
+const validateDayTimeSlots = (day: string) => {
+  if (!timeSlots.value[day] || timeSlots.value[day].length === 0) {
+    errors.value.timeSlots[day] = ['At least one time slot is required']
+    return false
+  }
   let isValid = true
+  errors.value.timeSlots[day] = []
+
+  timeSlots.value[day].forEach((slot, index) => {
+    const [startTime, endTime] = slot
+    if (!validateTimeSlot(startTime, endTime)) {
+      errors.value.timeSlots[day][index] = 'End time must be after start time'
+      isValid = false
+    } else if (hasTimeConflict(timeSlots.value[day], index)) {
+      errors.value.timeSlots[day][index] = 'Time slot conflicts with another slot'
+      isValid = false
+    }
+  })
+
+  // If there are any errors in the array, return false
+  if (errors.value.timeSlots[day].some((error) => error)) {
+    isValid = false
+  }
+
+  return isValid
+}
+
+const validateDuration = () => {
+  errors.value.duration = ''
+  if (!duration.value) {
+    errors.value.duration = 'Duration is required'
+    return false
+  } else if (duration.value < 30) {
+    errors.value.duration = 'Duration must be at least 30 minutes'
+    return false
+  } else if (duration.value > maximumDuration.value) {
+    errors.value.duration = `Duration cannot exceed ${maximumDuration.value} minutes`
+    return false
+  }
+  return true
+}
+
+const validateTables = () => {
+  errors.value.tables = ''
+  if (selectedTables.value.length === 0) {
+    errors.value.tables = 'At least one table must be selected'
+    return false
+  }
+  return true
+}
+
+// Watch to interact with the form
+watch(duration, () => {
+  validateDuration()
+})
+watch(selectedTables, () => {
+  validateTables()
+})
+watch(
+  timeSlots,
+  (newTimeSlots) => {
+    for (const day in newTimeSlots) {
+      validateDayTimeSlots(day)
+    }
+  },
+  { deep: true },
+)
+
+const validateForm = () => {
   errors.value = {
     duration: '',
     tables: '',
@@ -113,46 +202,57 @@ const validateForm = () => {
     backend: '',
   }
 
-  // Validate duration
-  if (!duration.value) {
-    errors.value.duration = 'Duration is required'
-    isValid = false
-  } else if (duration.value < 30) {
-    errors.value.duration = 'Duration must be at least 30 minutes'
-    isValid = false
-  } else if (duration.value > maximumDuration.value) {
-    errors.value.duration = `Duration cannot exceed ${maximumDuration.value} minutes`
-    isValid = false
-  }
+  const durationValid = validateDuration()
+  const tablesValid = validateTables()
 
-  // Validate tables
-  if (selectedTables.value.length === 0) {
-    errors.value.tables = 'At least one table must be selected'
-    isValid = false
-  }
-
-  // Validate time slots
+  let timeSlotsValid = true
   for (const day in timeSlots.value) {
-    errors.value.timeSlots[day] = []
-    if (!timeSlots.value[day] || timeSlots.value[day].length === 0) {
-      errors.value.timeSlots[day].push('At least one time slot is required')
-      isValid = false
-    } else {
-      timeSlots.value[day].forEach((slot, index) => {
-        const [startTime, endTime] = slot
-        if (!validateTimeSlot(startTime, endTime)) {
-          errors.value.timeSlots[day][index] = 'End time must be after start time'
-          isValid = false
-        }
-      })
+    if (!validateDayTimeSlots(day)) {
+      timeSlotsValid = false
     }
   }
 
-  return isValid
+  return durationValid && tablesValid && timeSlotsValid
+}
+
+const scrollToFirstError = () => {
+  // Check for duration error
+  if (errors.value.duration) {
+    const durationInput = document.getElementById('reservation-duration')
+    durationInput?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
+
+  // Check for tables error
+  if (errors.value.tables) {
+    const tablesListbox = document.getElementById('tables-selection')
+    tablesListbox?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
+
+  // Check for time slots errors
+  for (const day in errors.value.timeSlots) {
+    const dayErrors = errors.value.timeSlots[day]
+    if (Array.isArray(dayErrors) && dayErrors.some((error) => error)) {
+      const firstErrorIndex = dayErrors.findIndex((error) => error)
+      if (firstErrorIndex !== -1) {
+        const errorInput = document.getElementById(`time-slot-${day}-${firstErrorIndex}-start`)
+        errorInput?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return
+      }
+    }
+  }
+
+  // Check for backend error
+  if (errors.value.backend) {
+    const backendError = document.getElementById('backend-error')
+    backendError?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 }
 
 const handleSubmit = async () => {
   if (!validateForm()) {
+    scrollToFirstError()
     return
   }
 
@@ -160,9 +260,7 @@ const handleSubmit = async () => {
 
   try {
     const updatedSections = props.branch.sections.map((section) => ({
-      ...section,
       tables: section.tables.map((table) => ({
-        ...table,
         accepts_reservations: selectedTables.value.includes(table.id),
       })),
     }))
@@ -170,7 +268,7 @@ const handleSubmit = async () => {
     await updateBranch(props.branch.id, {
       reservation_duration: duration.value,
       reservation_times: timeSlots.value,
-      sections: updatedSections,
+      sections: updatedSections as Section[],
       accepts_reservations: acceptsReservations.value,
     })
     emit('branches-updated')
@@ -178,6 +276,7 @@ const handleSubmit = async () => {
   } catch (error: unknown) {
     errors.value.backend = (error as responseError).response.data.message
     console.error('Error updating branch:', error)
+    scrollToFirstError()
   } finally {
     loading.value = false
   }
@@ -218,6 +317,7 @@ const handleSubmit = async () => {
                 </div>
                 <div class="relative">
                   <input
+                    id="reservation-duration"
                     v-model="duration"
                     type="number"
                     :class="[
@@ -249,6 +349,7 @@ const handleSubmit = async () => {
                 <Listbox v-model="selectedTables" multiple>
                   <div class="relative mt-1">
                     <ListboxButton
+                      id="tables-selection"
                       :class="[
                         'relative w-full cursor-default rounded-lg bg-white py-2 pl-10 pr-10 text-left border focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-300 sm:text-sm',
                         errors.tables
@@ -363,6 +464,7 @@ const handleSubmit = async () => {
                     <div class="flex gap-2 mb-2">
                       <div class="flex-1">
                         <input
+                          :id="`time-slot-${day}-${index}-start`"
                           v-model="slot[0]"
                           type="time"
                           :class="[
@@ -376,6 +478,7 @@ const handleSubmit = async () => {
                       <span class="self-center">-</span>
                       <div class="flex-1">
                         <input
+                          :id="`time-slot-${day}-${index}-end`"
                           v-model="slot[1]"
                           type="time"
                           :class="[
@@ -442,7 +545,11 @@ const handleSubmit = async () => {
 
               <!-- Save Changes -->
               <div class="pt-4 border-t">
-                <p v-if="errors.backend" class="my-1 text-sm text-red-600 flex items-center gap-1">
+                <p
+                  v-if="errors.backend"
+                  id="backend-error"
+                  class="my-1 text-sm text-red-600 flex items-center gap-1"
+                >
                   {{ errors.backend }}
                 </p>
                 <div class="flex justify-end gap-4">

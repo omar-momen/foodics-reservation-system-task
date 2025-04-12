@@ -14,6 +14,7 @@ A modern web application for managing restaurant reservations, built with Vue 3,
   - Set reservation duration
   - Configure available time slots
   - Manage reservation acceptance rules
+  - Handle time conflicts between reservations
 
 ## Project Structure
 
