@@ -46,12 +46,14 @@ const maximumDuration = computed(() => {
   return slotDurations.length > 0 ? Math.min(...slotDurations) : 120 // Default to 2 hours if no slots
 })
 
-const selectedTables = ref<string[]>(
+const initialTables = ref<string[]>(
   props.branch.sections
     .flatMap((section) => section.tables)
     .filter((table) => table.accepts_reservations)
     .map((table) => table.id),
 )
+
+const selectedTables = ref<string[]>(initialTables.value)
 
 const days = ['saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday']
 const timeSlots = ref({ ...props.branch.reservation_times })
@@ -195,10 +197,20 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
+const handleClose = () => {
+  // Check if tables were modified by comparing with initial state
+  const tablesChanged =
+    JSON.stringify(initialTables.value.sort()) !== JSON.stringify(selectedTables.value.sort())
+  if (tablesChanged) {
+    emit('branches-updated')
+  }
+  emit('close')
+}
 </script>
 
 <template>
-  <Dialog as="div" class="relative z-10" @close="emit('close')" :open="props.isOpen">
+  <Dialog as="div" class="relative z-10" @close="handleClose" :open="props.isOpen">
     <div class="fixed inset-0 bg-black/50" />
 
     <div class="fixed inset-0 overflow-y-auto">
@@ -212,7 +224,7 @@ const handleSubmit = async () => {
               Branch Settings: {{ branch.name }}
             </DialogTitle>
             <button
-              @click="emit('close')"
+              @click="handleClose"
               class="text-gray-400 cursor-pointer hover:text-gray-500 transition-colors"
             >
               <XMarkIcon class="h-6 w-6" />
@@ -310,7 +322,7 @@ const handleSubmit = async () => {
                   <button
                     type="button"
                     class="inline-flex cursor-pointer items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-colors gap-2"
-                    @click="emit('close')"
+                    @click="handleClose"
                   >
                     <XMarkIcon class="h-5 w-5" />
                     Cancel
