@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Section } from '@/types'
 
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/vue'
 
@@ -15,7 +14,7 @@ import {
 } from '@heroicons/vue/20/solid'
 
 import type { Branch } from '@/types'
-import { updateBranch } from '@/services'
+import { updateBranch, updateTable } from '@/services'
 import TimeSlots from './TimeSlots.vue'
 import TableSelector from './TableSelector.vue'
 
@@ -155,6 +154,22 @@ const scrollToFirstError = () => {
   }
 }
 
+const handleTableToggle = async (tableId: string, acceptsReservations: boolean) => {
+  try {
+    await updateTable(tableId, { accepts_reservations: acceptsReservations })
+    // Update local state
+    const index = selectedTables.value.indexOf(tableId)
+    if (acceptsReservations && index === -1) {
+      selectedTables.value.push(tableId)
+    } else if (!acceptsReservations && index !== -1) {
+      selectedTables.value.splice(index, 1)
+    }
+  } catch (error: unknown) {
+    errors.value.backend = getErrorMessage(error)
+    console.error('Error updating table:', error)
+  }
+}
+
 const handleSubmit = async () => {
   if (!validateForm()) {
     scrollToFirstError()
@@ -164,16 +179,9 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
-    const updatedSections = props.branch.sections.map((section) => ({
-      tables: section.tables.map((table) => ({
-        accepts_reservations: selectedTables.value.includes(table.id),
-      })),
-    }))
-
     await updateBranch(props.branch.id, {
       reservation_duration: duration.value,
       reservation_times: timeSlots.value,
-      sections: updatedSections as Section[],
       accepts_reservations: acceptsReservations.value,
     })
     emit('branches-updated')
@@ -251,6 +259,7 @@ const handleSubmit = async () => {
                 v-model="selectedTables"
                 :sections="sections"
                 @update:isValid="isTablesValid = $event"
+                @table-toggle="handleTableToggle"
               />
 
               <!-- Time Slots -->
