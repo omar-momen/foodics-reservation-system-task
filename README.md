@@ -101,7 +101,20 @@ src/
    npm install
    ```
 
-3. **Development**
+3. **Environment Setup**
+
+   ```sh
+   # Copy the example environment file
+   cp .env.example .env
+
+   # Edit .env and add your Foodics API token
+   ```
+
+   Required environment variables:
+
+   - `VITE_FOODICS_API_TOKEN`: Your Foodics API token for authentication
+
+4. **Development**
 
    ```sh
    # Start development server
@@ -114,7 +127,7 @@ src/
    npm run lint
    ```
 
-4. **Production Build**
+5. **Production Build**
 
    ```sh
    # Build for production
