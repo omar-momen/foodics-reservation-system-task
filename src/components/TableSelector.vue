@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue'
-import { ChevronUpDownIcon, CheckIcon, TableCellsIcon, XCircleIcon } from '@heroicons/vue/20/solid'
+import {
+  ChevronUpDownIcon,
+  CheckIcon,
+  TableCellsIcon,
+  XCircleIcon,
+  CheckCircleIcon,
+} from '@heroicons/vue/20/solid'
 import type { Section } from '@/types'
 
 const modelValue = defineModel<string[]>({ default: () => [] })
@@ -15,6 +21,7 @@ const isValid = ref(true)
 
 const emit = defineEmits<{
   (e: 'update:isValid', value: boolean): void
+  (e: 'table-toggle', tableId: string, acceptsReservations: boolean): void
 }>()
 
 const validateTables = () => {
@@ -92,8 +99,9 @@ watch(
                 <li
                   :class="[
                     active ? 'bg-indigo-100 text-indigo-900' : 'text-gray-900',
-                    'relative cursor-default select-none py-2 pl-10 pr-4',
+                    'relative cursor-pointer select-none py-2 pl-10 pr-4 hover:bg-gray-50',
                   ]"
+                  @click.stop="emit('table-toggle', table.id, !selected)"
                 >
                   <span :class="[selected ? 'font-medium' : 'font-normal', 'block truncate']">
                     {{ table.name }}
@@ -106,6 +114,11 @@ watch(
                     ]"
                   >
                     <CheckIcon class="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <span class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <CheckCircleIcon
+                      :class="['h-5 w-5', selected ? 'text-green-500' : 'text-gray-400']"
+                    />
                   </span>
                 </li>
               </ListboxOption>
